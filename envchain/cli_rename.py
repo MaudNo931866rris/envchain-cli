@@ -10,6 +10,15 @@ from envchain.rename import RenameError, rename_profile
 from envchain import audit
 
 
+def _prompt_passphrase(profile_name: str) -> str:
+    """Prompt the user for the passphrase of *profile_name*.
+
+    Reads from the terminal without echoing the input.
+    Returns the entered passphrase string.
+    """
+    return getpass.getpass(f"Passphrase for '{profile_name}': ")
+
+
 def cmd_rename(args: argparse.Namespace) -> int:
     """Handle the ``envchain rename <old> <new>`` command.
 
@@ -18,7 +27,7 @@ def cmd_rename(args: argparse.Namespace) -> int:
     old_name: str = args.old_name
     new_name: str = args.new_name
 
-    passphrase = getpass.getpass(f"Passphrase for '{old_name}': ")
+    passphrase = _prompt_passphrase(old_name)
 
     try:
         rename_profile(old_name, new_name, passphrase)
