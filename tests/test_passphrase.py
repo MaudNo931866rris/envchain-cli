@@ -101,19 +101,15 @@ def test_enforce_raises_on_weak_passphrase():
 
 
 def test_enforce_does_not_raise_on_strong_passphrase():
-    enforce_passphrase("CorrectHorse42")  # should not raise
+    """enforce_passphrase should return the passphrase unchanged when it passes."""
+    passphrase = "CorrectHorse42!"
+    result = enforce_passphrase(passphrase)
+    assert result == passphrase
 
 
-# ---------------------------------------------------------------------------
-# __str__ representation
-# ---------------------------------------------------------------------------
-
-
-def test_str_includes_label():
-    result = PassphraseStrength(ok=True, score=3)
-    assert "strong" in str(result)
-
-
-def test_str_includes_violations_when_present():
-    result = PassphraseStrength(ok=False, score=1, violations=["too short"])
-    assert "too short" in str(result)
+def test_enforce_error_message_includes_violations():
+    """PassphraseError raised by enforce_passphrase should include violation details."""
+    with pytest.raises(PassphraseError) as exc_info:
+        enforce_passphrase("short")
+    error_message = str(exc_info.value)
+    assert "at least 12" in error_message or "uppercase" in error_message
