@@ -69,3 +69,12 @@ def test_cmd_rename_wrong_passphrase_returns_error(isolated_store, monkeypatch, 
     monkeypatch.setattr("getpass.getpass", lambda _: "badpass")
     rc = cmd_rename(_args("proj", "other"))
     assert rc == 1
+
+
+def test_cmd_rename_preserves_vars(isolated_store, monkeypatch):
+    """Renamed profile should retain all original variables."""
+    _seed("proj")
+    monkeypatch.setattr("getpass.getpass", lambda _: PASS)
+    cmd_rename(_args("proj", "project"))
+    renamed = Profile.load("project", PASS)
+    assert renamed.vars == {"X": "1"}
