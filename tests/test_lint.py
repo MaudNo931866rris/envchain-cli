@@ -86,8 +86,17 @@ def test_as_dict_on_issue():
 
 
 def test_multiple_issues_accumulate(isolated_store):
+    """A key that is lowercase AND has an empty value should produce two separate issues."""
     _seed("myapp", "Secret1!", {"lower_key": ""})
     result = lint_profile("myapp", "Secret1!")
     keys = [i.key for i in result.issues]
-    # Both a key warning and an empty-value warning for the same key
+    # Both the lowercase-key warning and the empty-value warning should be present.
     assert keys.count("lower_key") >= 2
+
+
+def test_lint_error_message_contains_profile_name(isolated_store):
+    """LintError raised on bad passphrase should reference the profile name."""
+    _seed("myapp", "Secret1!", {"FOO": "bar"})
+    with pytest.raises(LintError) as exc_info:
+        lint_profile("myapp", "wrongpass")
+    assert "myapp" in str(exc_info.value)
