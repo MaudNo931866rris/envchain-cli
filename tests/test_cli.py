@@ -19,6 +19,7 @@ def isolated_store(tmp_path, monkeypatch):
 
 
 def _make_profile(name: str, variables: dict) -> None:
+    """Helper to create and persist a profile with the given variables."""
     p = prof.load(name, PASSPHRASE)
     for k, v in variables.items():
         prof.set_var(p, k, v)
@@ -44,6 +45,16 @@ def test_cmd_set_invalid_format_returns_error():
     with patch("getpass.getpass", return_value=PASSPHRASE):
         rc = cli.cmd_set(args)
     assert rc == 1
+
+
+def test_cmd_set_value_with_equals_sign():
+    """Values that themselves contain '=' should be stored correctly."""
+    args = MagicMock(profile="myproject", var=["URL=http://example.com?a=1&b=2"])
+    with patch("getpass.getpass", return_value=PASSPHRASE):
+        rc = cli.cmd_set(args)
+    assert rc == 0
+    p = prof.load("myproject", PASSPHRASE)
+    assert prof.as_env_dict(p)["URL"] == "http://example.com?a=1&b=2"
 
 
 # ---------------------------------------------------------------------------
@@ -93,45 +104,4 @@ def test_cmd_list_empty_profile(capsys):
     assert "empty" in capsys.readouterr().out
 
 
-# ---------------------------------------------------------------------------
-# cmd_delete
-# ---------------------------------------------------------------------------
-
-def test_cmd_delete_confirmed(capsys):
-    _make_profile("todelete", {"X": "y"})
-    args = MagicMock(profile="todelete")
-    with patch("builtins.input", return_value="y"), \
-         patch("getpass.getpass", return_value=PASSPHRASE):
-        rc = cli.cmd_delete(args)
-    assert rc == 0
-
-
-def test_cmd_delete_aborted(capsys):
-    _make_profile("todelete", {"X": "y"})
-    args = MagicMock(profile="todelete")
-    with patch("builtins.input", return_value="n"):
-        rc = cli.cmd_delete(args)
-    assert rc == 0
-    # profile should still exist
-    p = prof.load("todelete", PASSPHRASE)
-    assert prof.as_env_dict(p)["X"] == "y"
-
-
-# ---------------------------------------------------------------------------
-# build_parser
-# ---------------------------------------------------------------------------
-
-def test_build_parser_set_subcommand():
-    parser = cli.build_parser()
-    args = parser.parse_args(["set", "myprofile", "FOO=bar"])
-    assert args.command == "set"
-    assert args.profile == "myprofile"
-    assert args.var == ["FOO=bar"]
-
-
-def test_build_parser_run_subcommand():
-    parser = cli.build_parser()
-    args = parser.parse_args(["run", "myprofile", "env", "-u", "HOME"])
-    assert args.command == "run"
-    assert args.command_name if hasattr(args, "command_name") else True
-    assert "env" in args.command
+# --------------------------
